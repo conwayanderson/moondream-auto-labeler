@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Moondream Auto-Labeler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+        </header>
+
+        <div class="upload-section">
+            <div class="input-group">
+                <input 
+                    type="text" 
+                    id="prompt" 
+                    placeholder="Enter a prompt or leave blank to auto-detect everything" 
+                    data-testid="input-prompt">
+                <button id="analyze-btn" data-testid="button-analyze" disabled>
+                    Auto-Label
+                </button>
+            </div>
+            
+            <div class="drop-zone" id="drop-zone" data-testid="zone-drop">
+                <div class="drop-content">
+                    <div class="drop-icon">+</div>
+                    <p>Drop images here or click to select</p>
+                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
+                        <span class="select-files" id="select-files">Select files</span> or 
+                        <span class="select-folder" id="select-folder">select folder</span>
+                    </p>
+                    <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
+                    <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
+                </div>
+            </div>
+            <div class="batch-controls">
+                <span class="file-count" id="file-count"></span>
+            </div>
+        </div>
+
+        <div class="loading" id="loading" style="display: none;" data-testid="status-loading">
+            <div class="spinner"></div>
+            <p>Auto-labeling with Moondream...</p>
+        </div>
+
+        <div class="results" id="results" style="display: none;" data-testid="section-results">
+            <h2>Results</h2>
+            <div class="filter-pills" id="filter-pills" data-testid="filter-pills">
+                <button class="filter-pill active" data-filter="all">All</button>
+            </div>
+            <div class="single-result" id="single-result">
+                <div class="image-container" id="image-container" data-testid="container-image">
+                    <img id="result-image" data-testid="img-result">
+                    <svg id="overlay" data-testid="overlay-svg"></svg>
+                </div>
+            </div>
+            <div class="batch-results" id="batch-results" data-testid="batch-results"></div>
+        </div>
+
+        <div class="error" id="error" style="display: none;" data-testid="status-error">
+            <p id="error-message" data-testid="text-error-message"></p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

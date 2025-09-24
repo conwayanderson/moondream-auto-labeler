@@ -1,0 +1,16 @@
+{
+  "name": "moondream-auto-labeler",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Standalone Moondream auto-labeling tool",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "moondream": "^0.1.1",
+    "sharp": "^0.34.4"
+  }
+}
