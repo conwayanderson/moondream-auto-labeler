@@ -1,6 +1,8 @@
 # Moondream Auto-Labeler
 
-Auto-label images with AI-powered object detection using Moondream's vision API.
+Auto-label images with bounding boxes using Moondream's query and detect API.
+
+![Auto-labeling example](auto_label_example.gif)
 
 ## Quick Start
 
