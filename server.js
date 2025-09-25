@@ -44,8 +44,8 @@ app.post('/auto-label', async (req, res) => {
 
     // Step 1: Query for objects
     const objectPrompt = prompt.trim() 
-      ? `List the ${prompt.trim()} you can see in this image. Return your answer as a simple comma-separated list of object names.`
-      : `List the objects you can see in this image. Return your answer as a simple comma-separated list of object names.`;
+      ? `List the ${prompt.trim()} you can see in this image. Return your answer as a simple comma-separated list of object names. If you cannot find any ${prompt.trim()}, return exactly "null".`
+      : `List all the objects you can see in this image. Return your answer as a simple comma-separated list of object names. Look carefully and include anything you can identify.`;
 
     const queryResponse = await fetch("https://api.moondream.ai/v1/query", {
       method: "POST",
@@ -69,10 +69,17 @@ app.post('/auto-label', async (req, res) => {
     console.log('Step 1 response:', objectList);
 
     // Parse objects from comma-separated list
-    const objects = objectList
-      .split(',')
-      .map(obj => obj.trim())
-      .filter(obj => obj.length > 0);
+    let objects = [];
+    
+    // Check if response is null or indicates no objects
+    if (objectList.toLowerCase().trim() === 'null' || objectList.toLowerCase().includes('no ') || objectList.toLowerCase().includes('none')) {
+      objects = [];
+    } else {
+      objects = objectList
+        .split(',')
+        .map(obj => obj.trim())
+        .filter(obj => obj.length > 0);
+    }
 
     console.log('Discovered objects:', objects);
 

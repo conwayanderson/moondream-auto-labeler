@@ -12,31 +12,42 @@
         </header>
 
         <div class="upload-section">
-            <div class="input-group">
-                <input 
-                    type="text" 
-                    id="prompt" 
-                    placeholder="Enter a prompt or leave blank to auto-detect everything" 
-                    data-testid="input-prompt">
-                <button id="analyze-btn" data-testid="button-analyze" disabled>
-                    Auto-Label
-                </button>
-            </div>
-            
             <div class="drop-zone" id="drop-zone" data-testid="zone-drop">
-                <div class="drop-content">
-                    <div class="drop-icon">+</div>
-                    <p>Drop images here or click to select</p>
-                    <p style="font-size: 0.9em; color: #666; margin-top: 5px;">
-                        <span class="select-files" id="select-files">Select files</span> or 
-                        <span class="select-folder" id="select-folder">select folder</span>
-                    </p>
-                    <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
-                    <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
+                <div class="drop-content" id="drop-content">
+                    <div class="drop-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7,10 12,5 17,10"/>
+                            <line x1="12" y1="5" x2="12" y2="15"/>
+                        </svg>
+                    </div>
                 </div>
+                <img class="image-preview" id="image-preview" alt="Preview">
+                <div class="image-overlay" id="image-overlay">
+                    <p class="image-filename" id="image-filename"></p>
+                </div>
+                <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
+                <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
             </div>
             <div class="batch-controls">
                 <span class="file-count" id="file-count"></span>
+            </div>
+            <div class="image-grid" id="image-grid" style="display: none;"></div>
+            
+            <div class="input-group">
+                <div class="input-container">
+                    <input 
+                        type="text" 
+                        id="prompt" 
+                        placeholder="Enter a prompt or leave blank to auto-detect everything" 
+                        data-testid="input-prompt">
+                    <button id="analyze-btn" data-testid="button-analyze" disabled>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="12" y1="19" x2="12" y2="5"/>
+                            <polyline points="5,12 12,5 19,12"/>
+                        </svg>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -46,7 +57,6 @@
         </div>
 
         <div class="results" id="results" style="display: none;" data-testid="section-results">
-            <h2>Results</h2>
             <div class="filter-pills" id="filter-pills" data-testid="filter-pills">
                 <button class="filter-pill active" data-filter="all">All</button>
             </div>

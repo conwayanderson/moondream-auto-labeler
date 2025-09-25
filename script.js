@@ -2,7 +2,11 @@ class MoondreamAutoLabeler {
     constructor() {
         this.currentImages = [];
         this.isBatchMode = false;
+        this.eventListenersAttached = false;
         this.initializeEventListeners();
+        
+        // Ensure button starts disabled
+        document.getElementById('analyze-btn').disabled = true;
     }
 
     initializeEventListeners() {
@@ -14,34 +18,64 @@ class MoondreamAutoLabeler {
         const analyzeBtn = document.getElementById('analyze-btn');
         const promptInput = document.getElementById('prompt');
 
-        // File input events
-        dropZone.addEventListener('click', (e) => {
-            // Only trigger file input if not clicking on the specific links
-            if (!e.target.matches('.select-files, .select-folder')) {
-                fileInput.click();
-            }
-        });
-        selectFiles.addEventListener('click', () => fileInput.click());
-        selectFolder.addEventListener('click', () => folderInput.click());
+        // File input events - use event delegation to persist through DOM changes
+        if (!this.eventListenersAttached) {
+            const self = this;
+            document.body.addEventListener('click', function(e) {
+                // Handle remove button clicks
+                if (e.target.matches('.remove-btn')) {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    const index = parseInt(e.target.getAttribute('data-index'));
+                    console.log('Remove button clicked, index:', index);
+                    self.removeImage(index);
+                    return;
+                }
+                
+                // Handle drop zone clicks
+                if (e.target.closest('.drop-zone') && !e.target.matches('.select-files, .select-folder, .remove-btn')) {
+                    const currentFileInput = document.getElementById('file-input');
+                    if (currentFileInput) currentFileInput.click();
+                }
+                
+                // Handle select files/folder clicks
+                if (e.target.matches('.select-files')) {
+                    const currentFileInput = document.getElementById('file-input');
+                    if (currentFileInput) currentFileInput.click();
+                }
+                if (e.target.matches('.select-folder')) {
+                    const currentFolderInput = document.getElementById('folder-input');
+                    if (currentFolderInput) currentFolderInput.click();
+                }
+            });
+
+            // Drag and drop events - attach to document body to persist
+            document.body.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                if (e.target.closest('.drop-zone')) {
+                    dropZone.classList.add('drag-over');
+                }
+            });
+
+            document.body.addEventListener('dragleave', function(e) {
+                if (!e.target.closest('.drop-zone')) {
+                    dropZone.classList.remove('drag-over');
+                }
+            });
+
+            document.body.addEventListener('drop', async function(e) {
+                e.preventDefault();
+                dropZone.classList.remove('drag-over');
+                if (e.target.closest('.drop-zone')) {
+                    await self.handleDrop(e);
+                }
+            });
+
+            this.eventListenersAttached = true;
+        }
         
         fileInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
         folderInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
-
-        // Drag and drop events
-        dropZone.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropZone.classList.add('drag-over');
-        });
-
-        dropZone.addEventListener('dragleave', () => {
-            dropZone.classList.remove('drag-over');
-        });
-
-        dropZone.addEventListener('drop', async (e) => {
-            e.preventDefault();
-            dropZone.classList.remove('drag-over');
-            await this.handleDrop(e);
-        });
 
         // Analyze button
         analyzeBtn.addEventListener('click', () => this.analyzeImages());
@@ -176,38 +210,96 @@ class MoondreamAutoLabeler {
             }
 
             this.isBatchMode = imageFiles.length > 1;
-            document.getElementById('analyze-btn').disabled = false;
+            
+            // Update button state based on images
+            this.updateButtonState();
             
             // Update drop zone and file count
             const dropZone = document.getElementById('drop-zone');
+            const dropContent = document.getElementById('drop-content');
+            const imagePreview = document.getElementById('image-preview');
+            const imageOverlay = document.getElementById('image-overlay');
+            const imageFilename = document.getElementById('image-filename');
             const fileCount = document.getElementById('file-count');
             
+            // Always hide the original drop content and show images inside drop zone
+            dropContent.style.display = 'none';
+            
             if (this.isBatchMode) {
-                dropZone.innerHTML = `
-                    <div class="drop-content">
-                        <div class="drop-icon">✓</div>
-                        <p><strong>${imageFiles.length} images</strong> selected</p>
-                        <p style="font-size: 0.9em; color: #666;">Click to select different images</p>
-                        <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
-                        <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
-                    </div>
-                `;
-                fileCount.textContent = `${imageFiles.length} images ready for processing`;
+                // Show image grid inside drop zone for multiple images
+                dropZone.classList.add('has-images');
+                dropZone.classList.remove('has-image');
+                imagePreview.classList.remove('visible');
+                imageOverlay.classList.remove('visible');
+                
+                // Create image grid inside drop zone
+                const imageGrid = document.createElement('div');
+                imageGrid.className = 'image-grid';
+                imageGrid.innerHTML = '';
+                
+                this.currentImages.forEach((image, index) => {
+                    const gridItem = document.createElement('div');
+                    gridItem.className = 'image-grid-item';
+                    gridItem.innerHTML = `
+                        <img src="${image.data}" alt="${image.name}">
+                        <button class="remove-btn" data-index="${index}">×</button>
+                        <div class="image-overlay">
+                            <p class="image-filename">${image.name}</p>
+                        </div>
+                    `;
+                    
+                    // Remove functionality handled by event delegation
+                    
+                    imageGrid.appendChild(gridItem);
+                });
+                
+                // Clear drop zone and add grid
+                dropZone.innerHTML = '';
+                dropZone.appendChild(imageGrid);
+                
+                fileCount.textContent = '';
             } else {
+                // Show single image preview in drop zone
+                dropZone.classList.add('has-image');
+                dropZone.classList.remove('has-images');
+                
                 dropZone.innerHTML = `
-                    <div class="drop-content">
-                        <div class="drop-icon">✓</div>
-                        <p><strong>${imageFiles[0].name}</strong> selected</p>
-                        <p style="font-size: 0.9em; color: #666;">Click to select a different image</p>
-                        <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
-                        <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
+                    <div class="single-image-container">
+                        <img class="image-preview visible" src="${this.currentImages[0].data}" alt="Preview">
+                        <button class="remove-btn" data-index="0">×</button>
+                        <div class="image-overlay visible">
+                            <p class="image-filename">${imageFiles[0].name}</p>
+                        </div>
                     </div>
                 `;
+                
+                // Remove functionality handled by event delegation
+                
                 fileCount.textContent = '';
             }
-
-            // Re-attach event listeners after updating innerHTML
-            this.reattachFileInputListeners();
+            
+            // Re-add file inputs to drop zone
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.id = 'file-input';
+            fileInput.accept = 'image/*';
+            fileInput.multiple = true;
+            fileInput.hidden = true;
+            fileInput.setAttribute('data-testid', 'input-file');
+            
+            const folderInput = document.createElement('input');
+            folderInput.type = 'file';
+            folderInput.id = 'folder-input';
+            folderInput.setAttribute('webkitdirectory', '');
+            folderInput.hidden = true;
+            folderInput.setAttribute('data-testid', 'folder-input');
+            
+            dropZone.appendChild(fileInput);
+            dropZone.appendChild(folderInput);
+            
+            // Re-attach file input listeners
+            fileInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
+            folderInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
 
             this.hideError();
             this.hideResults();
@@ -405,22 +497,39 @@ class MoondreamAutoLabeler {
             rect.setAttribute('y', y);
             rect.setAttribute('width', width);
             rect.setAttribute('height', height);
+            rect.setAttribute('rx', 4);
+            rect.setAttribute('ry', 4);
             rect.setAttribute('class', `bbox ${colorClass}`);
 
-            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            text.setAttribute('x', x + 5);
-            text.setAttribute('y', y - 5);
-            text.setAttribute('class', 'bbox-label');
-            text.textContent = obj.label;
-
+            // Create temporary text element to measure width
+            const tempText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            tempText.setAttribute('class', 'bbox-label');
+            tempText.textContent = obj.label;
+            tempText.style.visibility = 'hidden';
+            svg.appendChild(tempText);
+            const textWidth = tempText.getBBox().width;
+            svg.removeChild(tempText);
+            
+            const padding = 12;
+            const bgWidth = textWidth + padding;
+            const bgHeight = 20;
+            
             const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             textBg.setAttribute('x', x);
-            textBg.setAttribute('y', y - 25);
-            textBg.setAttribute('width', obj.label.length * 8 + 10);
-            textBg.setAttribute('height', 25);
+            textBg.setAttribute('y', y - 22);
+            textBg.setAttribute('width', bgWidth);
+            textBg.setAttribute('height', bgHeight);
+            textBg.setAttribute('rx', 6);
+            textBg.setAttribute('ry', 6);
             textBg.setAttribute('class', `${colorClass}`);
             textBg.setAttribute('fill', 'currentColor');
-            textBg.setAttribute('opacity', '0.8');
+            textBg.setAttribute('opacity', '0.9');
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', x + padding/2);
+            text.setAttribute('y', y - 22 + bgHeight/2 + 4);
+            text.setAttribute('class', 'bbox-label');
+            text.textContent = obj.label;
 
             svg.appendChild(textBg);
             svg.appendChild(rect);
@@ -508,6 +617,148 @@ class MoondreamAutoLabeler {
 
     hideResults() {
         document.getElementById('results').style.display = 'none';
+    }
+
+    resetDropZone() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileCount = document.getElementById('file-count');
+        
+        // Reset classes
+        dropZone.classList.remove('has-image', 'has-images');
+        
+        // Clear file count
+        if (fileCount) fileCount.textContent = '';
+        
+        // Rebuild the original drop zone HTML
+        dropZone.innerHTML = `
+            <div class="drop-content" id="drop-content">
+                <div class="drop-icon">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,5 17,10"/>
+                        <line x1="12" y1="5" x2="12" y2="15"/>
+                    </svg>
+                </div>
+            </div>
+            <img class="image-preview" id="image-preview" alt="Preview">
+            <div class="image-overlay" id="image-overlay">
+                <p class="image-filename" id="image-filename"></p>
+            </div>
+            <input type="file" id="file-input" accept="image/*" multiple hidden data-testid="input-file">
+            <input type="file" id="folder-input" webkitdirectory hidden data-testid="folder-input">
+        `;
+        
+        // Re-attach file input listeners
+        const fileInput = document.getElementById('file-input');
+        const folderInput = document.getElementById('folder-input');
+        fileInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
+        folderInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
+        
+        // Disable the button when no images
+        this.updateButtonState();
+    }
+
+    updateButtonState() {
+        const analyzeBtn = document.getElementById('analyze-btn');
+        if (analyzeBtn) {
+            analyzeBtn.disabled = this.currentImages.length === 0;
+        }
+    }
+
+    removeImage(index) {
+        console.log('removeImage called with index:', index, 'currentImages length:', this.currentImages.length);
+        
+        // Remove image from array
+        this.currentImages.splice(index, 1);
+        
+        console.log('After removal, currentImages length:', this.currentImages.length);
+        
+        if (this.currentImages.length === 0) {
+            // No images left, reset to empty state
+            console.log('No images left, resetting drop zone');
+            this.resetDropZone();
+        } else {
+            // Rebuild display with remaining images directly
+            console.log('Rebuilding display with remaining images');
+            this.rebuildImageDisplay();
+        }
+    }
+
+    rebuildImageDisplay() {
+        const dropZone = document.getElementById('drop-zone');
+        const fileCount = document.getElementById('file-count');
+        
+        this.isBatchMode = this.currentImages.length > 1;
+        this.updateButtonState();
+        
+        if (this.isBatchMode) {
+            // Show image grid inside drop zone for multiple images
+            dropZone.classList.add('has-images');
+            dropZone.classList.remove('has-image');
+            
+            // Create image grid inside drop zone
+            const imageGrid = document.createElement('div');
+            imageGrid.className = 'image-grid';
+            imageGrid.innerHTML = '';
+            
+            this.currentImages.forEach((image, newIndex) => {
+                const gridItem = document.createElement('div');
+                gridItem.className = 'image-grid-item';
+                gridItem.innerHTML = `
+                    <img src="${image.data}" alt="${image.name}">
+                    <button class="remove-btn" data-index="${newIndex}">×</button>
+                    <div class="image-overlay">
+                        <p class="image-filename">${image.name}</p>
+                    </div>
+                `;
+                imageGrid.appendChild(gridItem);
+            });
+            
+            // Clear drop zone and add grid
+            dropZone.innerHTML = '';
+            dropZone.appendChild(imageGrid);
+            
+            if (fileCount) fileCount.textContent = '';
+        } else {
+            // Show single image preview in drop zone
+            dropZone.classList.add('has-image');
+            dropZone.classList.remove('has-images');
+            
+            dropZone.innerHTML = `
+                <div class="single-image-container">
+                    <img class="image-preview visible" src="${this.currentImages[0].data}" alt="Preview">
+                    <button class="remove-btn" data-index="0">×</button>
+                    <div class="image-overlay visible">
+                        <p class="image-filename">${this.currentImages[0].name}</p>
+                    </div>
+                </div>
+            `;
+            
+            if (fileCount) fileCount.textContent = '';
+        }
+        
+        // Re-add file inputs to drop zone
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.id = 'file-input';
+        fileInput.accept = 'image/*';
+        fileInput.multiple = true;
+        fileInput.hidden = true;
+        fileInput.setAttribute('data-testid', 'input-file');
+        
+        const folderInput = document.createElement('input');
+        folderInput.type = 'file';
+        folderInput.id = 'folder-input';
+        folderInput.setAttribute('webkitdirectory', '');
+        folderInput.hidden = true;
+        folderInput.setAttribute('data-testid', 'folder-input');
+        
+        dropZone.appendChild(fileInput);
+        dropZone.appendChild(folderInput);
+        
+        // Re-attach file input listeners
+        fileInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
+        folderInput.addEventListener('change', (e) => this.handleFilesSelect(e.target.files));
     }
 }
 
