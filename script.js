@@ -349,12 +349,21 @@ class MoondreamAutoLabeler {
             for (let i = 0; i < this.currentImages.length; i++) {
                 const image = this.currentImages[i];
                 
-                // Update loading text to show progress
-                const loadingText = document.querySelector('#loading p');
+                // Update modal progress text
+                const modalProgress = document.getElementById('modal-progress');
+                const progressDetails = document.getElementById('progress-details');
+                const progressFill = document.getElementById('progress-fill');
+                const progressText = document.getElementById('progress-text');
+                
                 if (this.currentImages.length > 1) {
-                    loadingText.textContent = `Processing ${i + 1} of ${this.currentImages.length}: ${image.name}`;
+                    // Show progress bar for multiple images
+                    progressDetails.style.display = 'block';
+                    const progressPercent = ((i + 1) / this.currentImages.length) * 100;
+                    progressFill.style.width = `${progressPercent}%`;
+                    progressText.textContent = `${i + 1} of ${this.currentImages.length} images processed`;
+                    modalProgress.textContent = `Processing: ${image.name}`;
                 } else {
-                    loadingText.textContent = 'Auto-labeling with Moondream...';
+                    modalProgress.textContent = 'Auto-labeling with Moondream';
                 }
                 
                 try {
@@ -428,6 +437,18 @@ class MoondreamAutoLabeler {
                 const { objects } = result.data;
                 
                 if (objects && objects.length > 0) {
+                    // Create label-to-color mapping for consistent colors
+                    const labelColorMap = {};
+                    const uniqueLabels = [...new Set(objects.map(obj => obj.label))];
+                    uniqueLabels.forEach((label, labelIndex) => {
+                        labelColorMap[label] = labelIndex % 8;
+                    });
+                    
+                    // Assign consistent color indices to objects based on their labels
+                    objects.forEach(obj => {
+                        obj.colorIndex = labelColorMap[obj.label];
+                    });
+                    
                     // Create filter pills for this specific result
                     const filterPillsHtml = this.createFilterPillsHTML(objects, index);
                     
@@ -472,6 +493,14 @@ class MoondreamAutoLabeler {
 
             batchResultsContainer.appendChild(resultItem);
         });
+
+        // Auto-scroll to the bottom of the page
+        setTimeout(() => {
+            window.scrollTo({ 
+                top: document.body.scrollHeight, 
+                behavior: 'smooth' 
+            });
+        }, 100); // Small delay to ensure DOM is updated
     }
 
     drawBoundingBoxesOnSVG(svg, img, objects) {
@@ -485,7 +514,10 @@ class MoondreamAutoLabeler {
         svg.setAttribute('viewBox', `0 0 ${imageWidth} ${imageHeight}`);
 
         objects.forEach((obj, index) => {
-            const colorClass = `bbox-${index % 8}`;
+            // Use colorIndex if available (from label mapping), otherwise originalIndex, otherwise current index
+            const colorIndex = obj.colorIndex !== undefined ? obj.colorIndex : 
+                              (obj.originalIndex !== undefined ? obj.originalIndex : index);
+            const colorClass = `bbox-${colorIndex % 8}`;
             
             const x = obj.x_min * imageWidth;
             const y = obj.y_min * imageHeight;
@@ -510,24 +542,24 @@ class MoondreamAutoLabeler {
             const textWidth = tempText.getBBox().width;
             svg.removeChild(tempText);
             
-            const padding = 12;
+            const padding = 24;
             const bgWidth = textWidth + padding;
-            const bgHeight = 20;
+            const bgHeight = 40;
             
             const textBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             textBg.setAttribute('x', x);
-            textBg.setAttribute('y', y - 22);
+            textBg.setAttribute('y', y - 44);
             textBg.setAttribute('width', bgWidth);
             textBg.setAttribute('height', bgHeight);
-            textBg.setAttribute('rx', 6);
-            textBg.setAttribute('ry', 6);
+            textBg.setAttribute('rx', 8);
+            textBg.setAttribute('ry', 8);
             textBg.setAttribute('class', `${colorClass}`);
             textBg.setAttribute('fill', 'currentColor');
             textBg.setAttribute('opacity', '0.9');
 
             const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
             text.setAttribute('x', x + padding/2);
-            text.setAttribute('y', y - 22 + bgHeight/2 + 4);
+            text.setAttribute('y', y - 44 + bgHeight/2 + 8);
             text.setAttribute('class', 'bbox-label');
             text.textContent = obj.label;
 
@@ -597,11 +629,42 @@ class MoondreamAutoLabeler {
 
 
     showLoading() {
-        document.getElementById('loading').style.display = 'block';
+        // Show modal instead of inline loading
+        document.getElementById('modal-overlay').style.display = 'flex';
+        this.setButtonLoading(true);
+        
+        // Reset modal text and hide progress details initially
+        document.getElementById('modal-progress').textContent = 'Auto-labeling with Moondream';
+        document.getElementById('progress-details').style.display = 'none';
     }
 
     hideLoading() {
-        document.getElementById('loading').style.display = 'none';
+        // Hide modal with fade out animation
+        const modal = document.getElementById('modal-overlay');
+        modal.style.animation = 'modalFadeOut 0.3s ease-out';
+        
+        setTimeout(() => {
+            modal.style.display = 'none';
+            modal.style.animation = ''; // Reset animation
+        }, 300);
+        
+        this.setButtonLoading(false);
+    }
+
+    setButtonLoading(isLoading) {
+        const btn = document.getElementById('analyze-btn');
+        const arrow = btn.querySelector('.btn-arrow');
+        const spinner = btn.querySelector('.btn-spinner');
+        
+        if (isLoading) {
+            arrow.style.display = 'none';
+            spinner.style.display = 'block';
+            btn.disabled = true;
+        } else {
+            arrow.style.display = 'block';
+            spinner.style.display = 'none';
+            btn.disabled = false;
+        }
     }
 
     showError(message) {

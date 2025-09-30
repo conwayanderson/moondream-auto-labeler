@@ -77,15 +77,15 @@ header p {
     background: #3b82f6;
     color: white;
     border: none;
-    padding: 0;
-    border-radius: 50%;
+    padding: 8px 16px;
+    border-radius: 20px;
     cursor: pointer;
     transition: all 0.2s;
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
     height: 40px;
+    min-width: 120px;
 }
 
 #analyze-btn:hover:not(:disabled) {
@@ -112,6 +112,32 @@ header p {
 
 #analyze-btn[disabled] svg {
     stroke: #9ca3af !important;
+}
+
+.btn-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-text {
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.btn-arrow {
+    width: 18px;
+    height: 18px;
+    stroke: currentColor;
+}
+
+.spinner-small {
+    width: 18px;
+    height: 18px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top: 2px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
 }
 
 #analyze-btn svg {
@@ -236,6 +262,113 @@ header p {
 @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: modalFadeIn 0.3s ease-out;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    text-align: center;
+    animation: modalSlideIn 0.3s ease-out;
+}
+
+.modal-header h3 {
+    margin: 0 0 24px 0;
+    font-size: 20px;
+    color: #2d3748;
+    font-weight: 600;
+}
+
+.modal-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+.modal-body .spinner {
+    margin: 0;
+}
+
+.modal-body p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 16px;
+}
+
+.progress-details {
+    width: 100%;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #f3f4f6;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 12px;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+    width: 0%;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #9ca3af;
+    margin: 0;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes modalFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
 }
 
 .results {
@@ -497,7 +630,7 @@ header p {
 
 .bbox-label {
     font-family: 'SF Pro Rounded', -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 13px;
+    font-size: 26px;
     font-weight: 600;
     fill: white;
     text-shadow: 0 1px 3px rgba(0,0,0,0.8);

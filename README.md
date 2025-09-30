@@ -4,12 +4,29 @@ Auto-label images with bounding boxes using Moondream's query and detect API.
 
 ![Auto-labeling example](auto_label_example.gif)
 
+## Setup
+
+**Prerequisites**: You need a Moondream API key from [moondream.ai](https://moondream.ai)
+
+### Option 1: Set API key then start server
+```bash
+export MOONDREAM_API_KEY="your_api_key_here"
+npm start
+```
+
+### Option 2: Set API key inline with server start
+```bash
+MOONDREAM_API_KEY="your_api_key_here" npm start
+```
+
+### Option 3: Use node directly
+```bash
+MOONDREAM_API_KEY="your_api_key_here" node server.js
+```
+
 ## Quick Start
 
-1. **Start the server**
-   ```bash
-   node server.js
-   ```
+1. **Set your API key and start the server** (see Setup above)
 
 2. **Open** http://localhost:3002
 
@@ -17,22 +34,10 @@ Auto-label images with bounding boxes using Moondream's query and detect API.
 
 4. **Enter a prompt** (optional) - describe what to find, or leave blank to detect everything
 
-5. **Click Auto-Label** and view results with bounding boxes
+5. **Click ✨ Auto-label** and view results with bounding boxes
 
 ## Features
 
-- **Batch processing** - handle multiple images or folders at once
-- **Individual filtering** - each result has its own filter pills to show/hide specific objects
-- **Drag & drop** - supports files and folders
-- **Clean interface** - minimal, focused design
-
-## Setup
-
-Set your Moondream API key as an environment variable:
-
-```bash
-export MOONDREAM_API_KEY=your_api_key_here
-```
 
 ## How It Works
 
